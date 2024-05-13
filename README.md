@@ -1,3 +1,4 @@
+# hyprupdate
 ### A simple tool to manage yout hypr software
 
 ![image](https://github.com/LOSEARDES77/hyprupdate/assets/84414230/98036f58-68a4-487f-acd9-e022ed1d8fed)
