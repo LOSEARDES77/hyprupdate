@@ -15,6 +15,8 @@ const HYPRLOCK_REPO: &str = "https://github.com/hyprwm/hyprlock.git";
 const HYPRIDLE_REPO: &str = "https://github.com/hyprwm/hypridle.git";
 const HYPRPAPER_REPO: &str = "https://github.com/hyprwm/hyprpaper.git";
 const HYPRPICKER_REPO: &str = "https://github.com/hyprwm/hyprpicker.git";
+const HYPRCURSOR_REPO: &str = "https://github.com/hyprwm/hyprcursor.git";
+const HYPRLANG_REPO: &str = "https://github.com/hyprwm/hyprlang.git";
 const HYPRWAYLAND_SCANNER_REPO: &str = "https://github.com/hyprwm/hyprwayland-scanner.git";
 const XDG_DESKTOP_PORTAL_HYPRLAND_REPO: &str = "https://github.com/hyprwm/xdg-desktop-portal-hyprland.git";
 
@@ -255,10 +257,10 @@ fn which_repo(name: &str) -> &str {
         "Hyprland" => HYPRLAND_REPO,
         "hyprlock" => HYPRLOCK_REPO,
         "hypridle" => HYPRIDLE_REPO,
-        "hyprlang" => HYPRPAPER_REPO,
-        "hyprcursor" => HYPRPICKER_REPO,
-        "hyprpaper" => HYPRWAYLAND_SCANNER_REPO,
-        "hyprpicker" => XDG_DESKTOP_PORTAL_HYPRLAND_REPO,
+        "hyprlang" => HYPRLANG_REPO,
+        "hyprcursor" => HYPRCURSOR_REPO,
+        "hyprpaper" => HYPRPAPER_REPO,
+        "hyprpicker" => HYPRPICKER_REPO,
         "hyprwayland-scanner" => HYPRWAYLAND_SCANNER_REPO,
         "xdg-desktop-portal-hyprland" => XDG_DESKTOP_PORTAL_HYPRLAND_REPO,
         _ => "",
