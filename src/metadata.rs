@@ -76,11 +76,12 @@ uncompiled = false
     }
 
     pub fn set_to_compile(&self, name: &str, value: bool) {
+        let name = name.to_lowercase();
         let config = self.read_config();
 
         let mut toml: toml::Table = toml::from_str(&config).expect("Failed to parse metadata file");
 
-        toml[name]["uncompiled"] = toml::Value::Boolean(value);
+        toml[&name]["uncompiled"] = toml::Value::Boolean(value);
 
         let toml_string = toml::to_string(&toml).expect("Failed to convert to TOML string");
 
@@ -89,11 +90,12 @@ uncompiled = false
     }
 
     pub fn get_to_compile(&self, software: &str) -> bool {
+        let software = software.to_lowercase();
         let config = self.read_config();
 
         let toml: toml::Table  = toml::from_str(&config).expect("Failed to parse metadata file");
 
-        toml[software]["uncompiled"].as_bool().expect("Failed to get uncompiled value")
+        toml[&software]["uncompiled"].as_bool().expect("Failed to get uncompiled value")
     }
 
     pub fn set_installed(&self, name: &str, value: bool) {
@@ -110,27 +112,30 @@ uncompiled = false
     }
     #[allow(dead_code)]
     pub fn get_installed(&self, software: &str) -> bool {
+        let software = software.to_lowercase();
         let config = self.read_config();
 
         let toml: toml::Table  = toml::from_str(&config).expect("Failed to parse metadata file");
 
-        toml[software]["installed"].as_bool().expect("Failed to get installed value")
+        toml[&software]["installed"].as_bool().expect("Failed to get installed value")
     }
 
     pub fn get_compile_cmd(&self, software: &str) -> String {
+        let software = software.to_lowercase();
         let config = self.read_config();
 
         let toml: toml::Table  = toml::from_str(&config).expect("Failed to parse metadata file");
 
-        toml[software]["compile_cmd"].as_str().expect("Failed to get compile_cmd value").to_string()
+        toml[&software]["compile_cmd"].as_str().expect("Failed to get compile_cmd value").to_string()
     }
 
     pub fn get_install_cmd(&self, software: &str) -> String {
+        let software = software.to_lowercase();
         let config = self.read_config();
 
         let toml: toml::Table  = toml::from_str(&config).expect("Failed to parse metadata file");
 
-        toml[software]["install_cmd"].as_str().expect("Failed to get install_cmd value").to_string()
+        toml[&software]["install_cmd"].as_str().expect("Failed to get install_cmd value").to_string()
     }
 
     fn read_config(&self) -> String {

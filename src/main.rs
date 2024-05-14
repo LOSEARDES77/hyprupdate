@@ -129,9 +129,9 @@ fn main() {
 
                     let command = std::str::from_utf8(&command.stdout).unwrap();
                     if command.contains("Already up to date.") {
-                        println!("{} up to date.", name);
+                        println!("\x1b[34m{} up to date.\x1b[0m", name);
                     } else {
-                        println!("Updated {}", name);
+                        println!("\x1b[34mUpdated {}\x1b[0m", name);
                         meta.set_to_compile(&name, true);
                     }
                 }
@@ -144,11 +144,14 @@ fn main() {
             for i in &software2 {
                 if i.is_active() {
                     if metadata(get_data_path() + i.label().unwrap().as_str()).is_err() {
-                        Repository::clone(
+                        println!("\x1b[32mCloning: {}\x1b[0m", i.label().unwrap().as_str());
+                        let repo = Repository::clone(
                             which_repo(&i.label().unwrap().as_str()),
                             data_dir.clone() + i.label().unwrap().as_str(),
-                        )
-                        .expect("Failed to clone");
+                        ).expect("Failed to clone");
+                        for mut j in repo.submodules().unwrap(){
+                            j.update(true, None).expect("Failed to update submodule");
+                        }
                     }
                     meta1.set_installed(&i.label().unwrap().as_str(), true);
                     meta1.set_to_compile(&i.label().unwrap().as_str(), true);
@@ -161,6 +164,7 @@ fn main() {
         uninstall_selected_btn.connect_clicked(move |_| {
             for i in &software3 {
                 if i.is_active() {
+                    println!("\x1b[31mUninstalling: {}\x1b[0m", i.label().unwrap().as_str());
                     remove_dir_all(get_data_path() + i.label().unwrap().as_str())
                         .expect("Failed to remove directory");
                     meta2.set_installed(&i.label().unwrap().as_str(), false);
