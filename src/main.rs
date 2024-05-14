@@ -3,10 +3,14 @@ use std::env::{current_dir, set_current_dir};
 use std::fs::{create_dir_all, metadata, remove_dir_all};
 use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 use crate::metadata::Metadata;
 use git2::Repository;
-use gtk::prelude::*;
+use gtk::subclass::scrolled_window;
+use gtk::{glib, prelude::*};
 use gtk::{Application, ApplicationWindow};
 
 mod metadata;
@@ -22,11 +26,38 @@ const HYPRWAYLAND_SCANNER_REPO: &str = "https://github.com/hyprwm/hyprwayland-sc
 const XDG_DESKTOP_PORTAL_HYPRLAND_REPO: &str = "https://github.com/hyprwm/xdg-desktop-portal-hyprland.git";
 
 fn main() {
+    gtk::init().expect("Failed to initialize GTK.");
     let app = Application::builder()
         .application_id("org.hyprland.hyprupdate")
         .build();
 
-    app.connect_activate(|app| {
+    let (sender, receiver): (Sender<String>, Receiver<String>) = channel();
+
+        sender.send("Hyprupdate started.".to_string()).unwrap();
+        let terminal_output = gtk::TextView::new();
+        terminal_output.set_editable(false);
+        terminal_output.set_cursor_visible(false);
+        terminal_output.set_wrap_mode(gtk::WrapMode::Word);
+        terminal_output.set_vexpand(true);
+        terminal_output.set_hexpand(true);
+
+        let terminal_output1 = terminal_output.clone();
+
+        let scrolled_window = gtk::ScrolledWindow::new(gtk::Adjustment::NONE, gtk::Adjustment::NONE);
+        scrolled_window.set_vexpand(true);
+        scrolled_window.set_hexpand(true);
+        scrolled_window.set_min_content_height(200);
+        scrolled_window.set_min_content_width(800);
+        scrolled_window.set_child(Some(&terminal_output));
+
+        let scrolled_window1 = scrolled_window.clone();
+    
+
+    app.connect_activate(move |app| {
+        let sender1 = sender.clone();
+        let sender2 = sender.clone();
+        let sender3 = sender.clone();
+
         let data_path: String = get_data_path();
 
         if metadata(&data_path).is_err() {
@@ -89,6 +120,8 @@ fn main() {
             .halign(gtk::Align::Center)
             .valign(gtk::Align::Center)
             .build();
+        
+
 
         hypr_software_box.add(&hyprland.clone());
         hypr_software_box.add(&hyprlock);
@@ -129,9 +162,14 @@ fn main() {
 
                     let command = std::str::from_utf8(&command.stdout).unwrap();
                     if command.contains("Already up to date.") {
+                        #[cfg(debug_assertions)]
                         println!("\x1b[34m{} up to date.\x1b[0m", name);
+
+                        sender2.send(format!("{} up to date.", name)).unwrap();
                     } else {
+                        #[cfg(debug_assertions)]
                         println!("\x1b[34mUpdated {}\x1b[0m", name);
+                        sender2.send(format!("\x1b[34mUpdated {}\x1b[0m", name)).unwrap();
                         meta.set_to_compile(&name, true);
                     }
                 }
@@ -144,7 +182,9 @@ fn main() {
             for i in &software2 {
                 if i.is_active() {
                     if metadata(get_data_path() + i.label().unwrap().as_str()).is_err() {
+                        #[cfg(debug_assertions)]
                         println!("\x1b[32mCloning: {}\x1b[0m", i.label().unwrap().as_str());
+                        sender3.send(format!("\x1b[32mCloning: {}\x1b[0m", i.label().unwrap().as_str())).unwrap();
                         let repo = Repository::clone(
                             which_repo(&i.label().unwrap().as_str()),
                             data_dir.clone() + i.label().unwrap().as_str(),
@@ -155,7 +195,7 @@ fn main() {
                     }
                     meta1.set_installed(&i.label().unwrap().as_str(), true);
                     meta1.set_to_compile(&i.label().unwrap().as_str(), true);
-                    compile(&i.label().unwrap().as_str(), meta1.clone());
+                    compile(&i.label().unwrap().as_str(), meta1.clone(), sender3.clone());
                 }
             }
         });
@@ -164,16 +204,17 @@ fn main() {
         uninstall_selected_btn.connect_clicked(move |_| {
             for i in &software3 {
                 if i.is_active() {
-                    println!("\x1b[31mUninstalling: {}\x1b[0m", i.label().unwrap().as_str());
+                    sender1.send(format!("\x1b[31mUninstalling: {}\x1b[0m", i.label().unwrap().as_str())).unwrap();
                     remove_dir_all(get_data_path() + i.label().unwrap().as_str())
                         .expect("Failed to remove directory");
                     meta2.set_installed(&i.label().unwrap().as_str(), false);
                 }
             }
         });
+        
 
         let box_up = gtk::Box::builder()
-            .orientation(gtk::Orientation::Horizontal)
+            .orientation(gtk::Orientation::Vertical)
             .spacing(20)
             .margin_top(20)
             .margin_bottom(20)
@@ -203,6 +244,7 @@ fn main() {
 
         win.set_titlebar(Some(&bar));
 
+        box_up.add(&scrolled_window);
         box_up.add(&hypr_software_box);
 
         box_down.add(&get_installed_btn);
@@ -215,11 +257,32 @@ fn main() {
 
         win.set_child(Some(&main_box));
 
-        // Don't forget to make all widgets visible.
         win.show_all();
     });
 
-    app.run();
+    let scrolled_window1 = Arc::new(Mutex::new(scrolled_window1.clone()));
+    let cloned_scrolled_window1 = Arc::clone(&scrolled_window1);
+    let terminal_output1 = Arc::new(Mutex::new(terminal_output1.clone()));
+    let cloned_terminal_output1 = Arc::clone(&terminal_output1);
+    thread::spawn(|| {
+        update_terminal_output(receiver, cloned_scrolled_window1, cloned_terminal_output1);
+    });
+
+}
+
+fn update_terminal_output(receiver: Receiver<String>, scrolled_window: Arc<Mutex<gtk::ScrolledWindow>>, terminal_output: Arc<Mutex<gtk::TextView>>) {
+    loop {
+        match receiver.try_recv() {
+            Ok(text) => {
+                let buffer = terminal_output.lock().unwrap().buffer().unwrap();
+                let mut end_iter = buffer.end_iter();
+                buffer.insert(&mut end_iter, text.as_str());
+
+                scrolled_window.lock().unwrap().vadjustment().set_value(scrolled_window.lock().unwrap().vadjustment().upper());
+            }
+            Err(_) => {},
+        }
+    }
 }
 
 fn get_data_path() -> String {
@@ -238,21 +301,26 @@ fn get_data_path() -> String {
     }
 }
 
-fn compile(software: &str, meta: Metadata) {
+fn compile(software: &str, meta: Metadata, sender: Sender<String>) {
     if !meta.get_to_compile(software) {
         return;
     }
+    #[cfg(debug_assertions)]
     println!("\x1b[32mCompiling {}\x1b[0m", software);
+    
+    sender.send(format!("\x1b[32mCompiling {}\x1b[0m", software)).unwrap();
 
     let path = get_data_path() + software;
     set_current_dir(path.as_str()).expect("Failed to set current directory");
     let build_cmd = meta.get_compile_cmd(software);
-    run_command(build_cmd.as_str());
+    run_command(build_cmd.as_str(), sender.clone());
     meta.set_to_compile(software, false);
     let install_cmd = meta.get_install_cmd(software);
-    run_command(install_cmd.as_str());
+    run_command(install_cmd.as_str(), sender.clone());
     meta.set_installed(software, true);
+    #[cfg(debug_assertions)]
     println!("{} installed", software);
+    sender.send(format!("\x1b[32m{} installed\x1b[0m", software)).unwrap();
 }
 
 fn which_repo(name: &str) -> &str {
@@ -270,10 +338,12 @@ fn which_repo(name: &str) -> &str {
     }
 }
 
-fn run_command(inpt: &str) {
+fn run_command(inpt: &str, sender: Sender<String>) {
     let commands = inpt.trim().split("&&").map(|i| i.trim());
     for command in commands {
+        #[cfg(debug_assertions)]
         println!("\x1b[34mRunning: {}\x1b[0m", command);
+        sender.send(format!("\x1b[34mRunning: {}\x1b[0m", command)).unwrap();
         let iterator = command.split_whitespace();
         let mut command = Command::new(iterator.clone().next().unwrap());
         for arg in iterator.skip(1) {
@@ -288,10 +358,14 @@ fn run_command(inpt: &str) {
         for line in reader.lines() {
             match line {
                 Ok(line) => {
+                    #[cfg(debug_assertions)]
                     println!("{}", line);
+                    sender.send(line).unwrap();
                 },
                 Err(e) => {
+                    #[cfg(debug_assertions)]
                     println!("\x1b[31mError: {}\x1b[0m", e);
+                    sender.send(format!("\x1b[31mError: {}\x1b[0m", e)).unwrap();
                 },
             }
         }
