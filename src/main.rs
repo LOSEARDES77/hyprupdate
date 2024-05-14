@@ -1,3 +1,4 @@
+#![allow(unused_imports)]
 use std::env::{current_dir, set_current_dir};
 use std::fs::{create_dir_all, metadata, remove_dir_all};
 use std::io::{BufRead, BufReader};
@@ -234,12 +235,10 @@ fn get_data_path() -> String {
 }
 
 fn compile(software: &str, meta: Metadata) {
-    println!("Compiling {}", software);
     if !meta.get_to_compile(software) {
         return;
     }
-
-    println!("Compiling {}", software);
+    println!("\x1b[32mCompiling {}\x1b[0m", software);
 
     let path = get_data_path() + software;
     set_current_dir(path.as_str()).expect("Failed to set current directory");

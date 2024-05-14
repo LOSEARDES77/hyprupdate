@@ -97,11 +97,12 @@ uncompiled = false
     }
 
     pub fn set_installed(&self, name: &str, value: bool) {
+        let name = name.to_lowercase();
         let config = self.read_config();
 
         let mut toml: toml::Table  = toml::from_str(&config).expect("Failed to parse metadata file");
 
-        toml[name]["installed"] = toml::Value::Boolean(value);
+        toml[&name]["installed"] = toml::Value::Boolean(value);
 
         let mut file = File::create(&self.file).expect("Failed to create metadata file");
         file.write_all(toml.to_string().as_bytes()).expect("Failed to write to metadata file");
