@@ -184,13 +184,13 @@ fn main() {
 
                     let command = std::str::from_utf8(&command.stdout).unwrap();
                     if command.contains("Already up to date.") {
-                        #[cfg(debug_assertions)]
+                        
                         println!("\x1b[34m{} up to date.\x1b[0m", name);
 
                         
-                        update_terminal_output(scrolled_window1.clone(), terminal_output1.clone(), format!("{} up to date.", name));
+                        update_terminal_output(scrolled_window1.clone(), terminal_output1.clone(), format!("{} up to date.\n", name));
                     } else {
-                        #[cfg(debug_assertions)]
+                        
                         println!("\x1b[34mUpdated {}\x1b[0m", name);
                         update_terminal_output(scrolled_window1.clone(), terminal_output1.clone(), format!("Updated {}\n", name));
                         meta.set_to_compile(&name, true);
@@ -205,7 +205,7 @@ fn main() {
             for i in &software2 {
                 if i.is_active() {
                     if metadata(get_data_path() + i.label().unwrap().as_str()).is_err() {
-                        #[cfg(debug_assertions)]
+                        
                         println!("\x1b[32mCloning: {}\x1b[0m", i.label().unwrap().as_str());
 
                         update_terminal_output(scrolled_window3.clone(), terminal_output3.clone(), format!("Cloning: {}\n", i.label().unwrap().as_str()));
@@ -228,7 +228,7 @@ fn main() {
         uninstall_selected_btn.connect_clicked(move |_| {
             for i in &software3 {
                 if i.is_active() {
-                    #[cfg(debug_assertions)]
+                    
                     println!("\x1b[31mUninstalling: {}\x1b[0m", i.label().unwrap().as_str());
                     update_terminal_output(scrolled_window2.clone(), terminal_output2.clone(), format!("::Uninstalling {}\n", i.label().unwrap().as_str()));
                     remove_dir_all(get_data_path() + i.label().unwrap().as_str())
@@ -337,7 +337,7 @@ fn compile(software: &str, meta: Metadata, scrolled_window: gtk::ScrolledWindow,
     if !meta.get_to_compile(software) {
         return;
     }
-    #[cfg(debug_assertions)]
+
     println!("\x1b[32mCompiling {}\x1b[0m", software);
 
     update_terminal_output(scrolled_window.clone(), terminal_output.clone(), format!("::Compiling {}\n", software));
@@ -350,7 +350,7 @@ fn compile(software: &str, meta: Metadata, scrolled_window: gtk::ScrolledWindow,
     let install_cmd = meta.get_install_cmd(software);
     run_command(install_cmd.as_str(), scrolled_window.clone(), terminal_output.clone());
     meta.set_installed(software, true);
-    #[cfg(debug_assertions)]
+
     println!("{} installed", software);
     update_terminal_output(scrolled_window.clone(), terminal_output.clone(), format!("::Installed {}\n", software));
 }
@@ -373,7 +373,7 @@ fn which_repo(name: &str) -> &str {
 fn run_command(inpt: &str, scroll_window: gtk::ScrolledWindow, terminal_output: gtk::TextView) {
     let commands = inpt.trim().split("&&").map(|i| i.trim());
     for command in commands {
-        #[cfg(debug_assertions)]
+        
         println!("\x1b[34mRunning: {}\x1b[0m", command);
 
         update_terminal_output(scroll_window.clone(), terminal_output.clone(), format!("::Running {}\n", command));
@@ -389,16 +389,16 @@ fn run_command(inpt: &str, scroll_window: gtk::ScrolledWindow, terminal_output: 
             .spawn()
             .expect("failed to build repository");
         
-        let reader = BufReader::new(process.stdout.take().expect("failed to get stdout"));
+        let reader = BufReader::new(process.stderr.take().expect("failed to get stdout"));
         for line in reader.lines() {
             match line {
                 Ok(line) => {
-                    #[cfg(debug_assertions)]
+                    
                     println!("{}", line);
                     update_terminal_output(scroll_window.clone(), terminal_output.clone(), format!("{}\n", line.trim()));
                 },
                 Err(e) => {
-                    #[cfg(debug_assertions)]
+                    
                     println!("\x1b[31mError: {}\x1b[0m", e);
                     
                     update_terminal_output(scroll_window.clone(), terminal_output.clone(), format!("Error: {}\n", e));
